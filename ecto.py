@@ -225,7 +225,7 @@ def button():
 
 def main():
 
-    #todo red wire broken, probably at solder point to led
+    #todo wand red light broken, probably at solder point to led
     #todo rewire red and white wand lighs to be on the same channel
     #todo rewire wand barrel white light to take the now open channel
     #todo switch wires are wired incorreclty, neitehr are going to 3v power
