@@ -2,8 +2,21 @@ from time import sleep
 import board
 import busio
 import adafruit_pca9685
+import RPi.GPIO as GPIO
+
+# GPIO.setmode(GPIO.BOARD)
 import threading
 import multiprocessing
+
+# --------------------------------------------------
+#
+#       Pi networking info:
+#       router dhcp assigning 192.168.1.179 to the
+#       pi wifi dongle
+#       username: ecto
+#       pass: test
+#
+# ---------------------------------------------------
 
 from adafruit_servokit import ServoKit
 
@@ -17,6 +30,10 @@ MAX_BRIGHT = 65535  # 0xffff
 TOTAL_CHANNELS = 16
 
 bright_vals = []
+
+button_gpio_pin = 19
+
+GPIO.setup(button_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 def init_channels():
@@ -32,88 +49,73 @@ def init_channels():
     print(len(bright_vals))
 
 
-def cycle_cyclotron():
-    # 0 = greens
-    # 1 = brown
-    # 2 = orange
-    # 3 = blue
-
-    cyclotron = [controler.channels[8],
-                 controler.channels[9],
-                 controler.channels[10],
-                 controler.channels[11]
-                 ]
-
-    while True:
-        for led in cyclotron:
-            print(f'cycling {cyclotron.index(led)}')
-            for i in bright_vals:
-                led.duty_cycle = i
-                sleep(.004)
-            for i in reversed(bright_vals):
-                led.duty_cycle = i
-                sleep(.001)
-            led.duty_cycle = 0
-
-
-def blink_trap():
-    trap_led = controler.channels[12]
-
-    while True:
-        trap_led.duty_cycle = 0
-        sleep(.3)
-        trap_led.duty_cycle = MAX_BRIGHT
-        print('blinking the trap')
-
-
-def run_neutrona_wand():
-    throw_lights = [controler.channels[13]]
-
-    while True:
-        for led in run_lights:
-            led.duty_cycle = 0
-            sleep(.5)
-            led.duty_cycle = MAX_BRIGHT
-        print('blinking the wand')
-
-    # todo figure out the throwing and the switch
-
-
-def cycle_power_cell():
-    cells = [controler.channels[0], controler.channels[1], controler.channels[2], controler.channels[3],
-             controler.channels[4], controler.channels[5], controler.channels[6], controler.channels[7]]
-
-    cells[0].duty_cycle = MAX_BRIGHT
-    sleep_length = .08
-    while True:
-        for i in range(1, len(cells)):
-            print(f'powering cell {i}')
-            cells[i].duty_cycle = MAX_BRIGHT
-            sleep(sleep_length)
-        for i in range(1, len(cells)):
-            print('clearing cells')
-            cells[i].duty_cycle = 0
-        sleep(sleep_length)
-
-
-def light_0_on():
-    print('old way')
-    controler.channels[1].duty_cycle = MAX_BRIGHT
-
-
-# def light_with_servo():
-#     print('servo way')
-#     kit = ServoKit(channels=16)
-#     kit.servo[0].actuation_range = 1000
-#     kit.servo[0].angle = 1000
+# def cycle_cyclotron():
+#     # 0 = greens
+#     # 1 = brown
+#     # 2 = orange
+#     # 3 = blue
+#
+#     cyclotron = [controler.channels[8],
+#                  controler.channels[9],
+#                  controler.channels[10],
+#                  controler.channels[11]
+#                  ]
+#
 #     while True:
-#         kit.servo[0].angle = 360
-#         sleep(1)
-#         kit.servo[0].angle = 0
-#         sleep(1)
+#         for led in cyclotron:
+#             print(f'cycling {cyclotron.index(led)}')
+#             for i in bright_vals:
+#                 led.duty_cycle = i
+#                 sleep(.004)
+#             for i in reversed(bright_vals):
+#                 led.duty_cycle = i
+#                 sleep(.001)
+#             led.duty_cycle = 0
 
-# def light_with_continuous_servo():
-#     kit.continuous_servo[3].throttle = 1
+
+# def blink_trap():
+#     trap_led = controler.channels[12]
+#
+#     while True:
+#         trap_led.duty_cycle = 0
+#         sleep(.3)
+#         trap_led.duty_cycle = MAX_BRIGHT
+#         print('blinking the trap')
+
+
+# def run_neutrona_wand():
+#     throw_lights = [controler.channels[13]]
+#
+#     while True:
+#         for led in run_lights:
+#             led.duty_cycle = 0
+#             sleep(.5)
+#             led.duty_cycle = MAX_BRIGHT
+#         print('blinking the wand')
+#
+#     # todo figure out the throwing and the switch
+
+
+# def cycle_power_cell():
+#     cells = [controler.channels[0], controler.channels[1], controler.channels[2], controler.channels[3],
+#              controler.channels[4], controler.channels[5], controler.channels[6], controler.channels[7]]
+#
+#     cells[0].duty_cycle = MAX_BRIGHT
+#     sleep_length = .08
+#     while True:
+#         for i in range(1, len(cells)):
+#             print(f'powering cell {i}')
+#             cells[i].duty_cycle = MAX_BRIGHT
+#             sleep(sleep_length)
+#         for i in range(1, len(cells)):
+#             print('clearing cells')
+#             cells[i].duty_cycle = 0
+#         sleep(sleep_length)
+
+
+# def light_0_on():
+#     print('old way')
+#     controler.channels[1].duty_cycle = MAX_BRIGHT
 
 def test_cycle():
     for i in range(TOTAL_CHANNELS):
@@ -148,6 +150,7 @@ def compromise():
     cell_index = 0
 
     while True:
+
         # print('-----------------------')
         # print('new loop')
         # toggle trap
@@ -210,31 +213,30 @@ def compromise():
         sleep(.005)
 
 
+def button():
+    while True:
+        button_state = GPIO.input(button_gpio_pin)
+
+        if button_state == False:
+            print('Button state is False')
+        # else:
+        #     print('Button state is True')
+
+
 def main():
+
+    #todo red wire broken, probably at solder point to led
+    #todo rewire red and white wand lighs to be on the same channel
+    #todo rewire wand barrel white light to take the now open channel
+    #todo switch wires are wired incorreclty, neitehr are going to 3v power
+    #todo one needs to be
+    #todo then add code to control switch
+
     print("main starting up")
     init_channels()
-
-    # blink_trap()
-    # cycle_cyclotron()
-    # cycle_power_cell()
-
-    # blink_trap_thread = threading.Thread(target=blink_trap)
-    # blink_trap_thread.setDaemon(True)
-    # cyclotron_thread = threading.Thread(target=cycle_cyclotron())
-    # power_cell_thread = threading.Thread(target=cycle_power_cell())
-
-    # cyclotron_thread.setDaemon(True)
-
-    # blink_trap_thread.start()
-    # cyclotron_thread.start()
-    # power_cell_thread.start()
-
-    # cyclotron_process = multiprocessing.Process(target=cycle_cyclotron())
-    # power_cell_process = multiprocessing.Process(target=cycle_power_cell())
-    #
-    # cyclotron_process.start()
-    # power_cell_process.start()
     compromise()
+    # button()
+    # test_cycle()
 
 
 if __name__ == '__main__':
